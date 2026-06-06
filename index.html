@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live AI Threat Radar — June 6, 2026</title>
+<style>
+  :root{
+    --bg:#0a0e14; --bg2:#0d1320; --surface:#121a28; --surface2:#16202f;
+    --line:#223044; --line2:#2c3e54;
+    --txt:#e6edf5; --muted:#93a4ba; --faint:#64768c;
+    --cyan:#36d1dc; --cyan2:#5ee7d6; --red:#ff5a6e; --amber:#ffb347; --green:#56e39f;
+    --shadow:0 10px 40px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 700px at 80% -10%, rgba(54,209,220,.10), transparent 60%),
+      radial-gradient(900px 600px at -10% 10%, rgba(94,231,214,.06), transparent 55%),
+      var(--bg);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;}
+  .wrap{max-width:940px;margin:0 auto;padding:38px 22px 80px;}
+
+  /* HEADER */
+  header.hero{
+    border:1px solid var(--line); border-radius:18px;
+    background:linear-gradient(180deg,rgba(54,209,220,.07),rgba(10,14,20,.2));
+    padding:30px 30px 26px; position:relative; overflow:hidden; box-shadow:var(--shadow);
+  }
+  .brandrow{display:flex;align-items:center;gap:16px;}
+  .radar{flex:none;width:64px;height:64px;}
+  .pulse-dot{font-size:11px;letter-spacing:.18em;color:var(--green);display:inline-flex;align-items:center;gap:8px;}
+  .pulse-dot .blip{width:9px;height:9px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(86,227,159,.55);}70%{box-shadow:0 0 0 12px rgba(86,227,159,0);}100%{box-shadow:0 0 0 0 rgba(86,227,159,0);}}
+  h1{font-size:30px;line-height:1.15;margin:2px 0 4px;letter-spacing:-.5px;}
+  h1 .accent{color:var(--cyan2);}
+  .subtitle{color:var(--muted);font-size:15px;max-width:660px;margin:10px 0 0;}
+  .meta-strip{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;}
+  .meta-chip{font-size:11.5px;letter-spacing:.06em;color:var(--muted);border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:6px 13px;}
+  .meta-chip b{color:var(--txt);font-weight:600;}
+  .models-line{margin-top:14px;font-size:11.5px;color:var(--faint);letter-spacing:.04em;}
+  .models-line b{color:var(--cyan2);font-weight:600;}
+
+  /* INTRO */
+  .intro{margin:26px 0 8px;color:var(--muted);font-size:15.5px;}
+  .intro strong{color:var(--txt);}
+
+  /* VELOCITY METER */
+  .vmeter{display:inline-flex;gap:2px;align-items:center;vertical-align:middle;}
+  .vbar{width:4px;height:11px;border-radius:1px;background:var(--line2);display:inline-block;}
+  .vbar.r{background:var(--red);} .vbar.a{background:var(--amber);} .vbar.g{background:var(--green);}
+  .vlabel{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.07em;margin-left:5px;font-weight:700;}
+  .v-spike .vlabel{color:var(--red);} .v-rise .vlabel{color:var(--amber);} .v-steady .vlabel{color:var(--faint);}
+
+  /* THREAT BOARD (LEADERBOARD) */
+  .board{
+    border:1px solid var(--line2); border-radius:16px;
+    background:linear-gradient(180deg,rgba(54,209,220,.05),var(--bg2));
+    padding:8px 0 6px; margin:24px 0 14px; box-shadow:var(--shadow);
+  }
+  .board-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:14px 20px 8px;flex-wrap:wrap;}
+  .board-h h3{margin:0;font-size:13px;letter-spacing:.18em;color:var(--cyan2);font-weight:700;}
+  .board-h span{font-size:10.5px;color:var(--faint);letter-spacing:.1em;}
+  .vkey{display:flex;gap:16px;flex-wrap:wrap;padding:0 20px 12px;border-bottom:1px solid var(--line);font-size:10px;color:var(--faint);letter-spacing:.04em;}
+  .vkey .ki{display:inline-flex;align-items:center;gap:6px;}
+  .row{display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:center;padding:13px 20px;border-bottom:1px solid rgba(34,48,68,.6);cursor:pointer;text-decoration:none;color:inherit;transition:background .15s;}
+  .row:last-child{border-bottom:none;}
+  .row:hover{background:rgba(54,209,220,.05);}
+  .rank{font-family:ui-monospace,monospace;font-size:18px;font-weight:700;color:var(--faint);text-align:center;}
+  .row.crit .rank{color:var(--red);}
+  .rd-name{font-family:ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--txt);letter-spacing:-.2px;}
+  .rd-name .vsmall{color:var(--cyan2);font-weight:500;}
+  .climb{display:inline-block;font-family:ui-monospace,monospace;font-size:9px;font-weight:700;color:var(--red);border:1px solid rgba(255,90,110,.4);border-radius:4px;padding:1px 5px;margin-left:6px;letter-spacing:.05em;vertical-align:middle;}
+  .slip{display:inline-block;font-family:ui-monospace,monospace;font-size:9px;font-weight:700;color:var(--faint);border:1px solid var(--line2);border-radius:4px;padding:1px 5px;margin-left:6px;letter-spacing:.05em;vertical-align:middle;}
+  .rd-sub{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .rd-sub .exp{color:var(--faint);}
+  .rd-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .sev-tag{font-family:ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:.08em;padding:3px 8px;border-radius:5px;white-space:nowrap;}
+  .sev-crit{background:rgba(255,90,110,.14);color:var(--red);border:1px solid rgba(255,90,110,.35);}
+  .sev-high{background:rgba(255,179,71,.13);color:var(--amber);border:1px solid rgba(255,179,71,.32);}
+
+  /* SECTION LABEL */
+  .seclabel{font-size:11px;letter-spacing:.22em;color:var(--faint);margin:34px 0 14px;font-weight:700;border-top:1px solid var(--line);padding-top:18px;}
+
+  /* THREAT CARD */
+  .threat{
+    border:1px solid var(--line);
+    background:linear-gradient(180deg,var(--surface),var(--bg2));
+    border-radius:16px; padding:24px 26px 22px; margin:16px 0;
+    box-shadow:0 4px 18px rgba(0,0,0,.25); position:relative; scroll-margin-top:18px;
+  }
+  .threat::before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;border-radius:3px;background:var(--amber);}
+  .threat.crit::before{background:var(--red);}
+  .t-head{display:flex;align-items:flex-start;gap:16px;}
+  .t-num{font-family:ui-monospace,monospace;font-size:22px;font-weight:700;color:var(--faint);flex:none;width:42px;line-height:1.25;}
+  .crit .t-num{color:rgba(255,90,110,.7);}
+  .t-titlewrap{flex:1;}
+  .t-kicker{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.12em;color:var(--cyan2);font-weight:700;display:block;margin-bottom:5px;}
+  .t-title{font-size:19.5px;font-weight:700;margin:0;letter-spacing:-.3px;line-height:1.28;}
+  .t-shift{margin:9px 0 0;color:#cbe9ec;font-size:14px;font-weight:500;}
+  .t-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center;}
+  .traj,.velbadge{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.06em;color:var(--muted);border:1px solid var(--line2);border-radius:5px;padding:3px 8px;background:rgba(255,255,255,.02);display:inline-flex;align-items:center;gap:6px;}
+  .traj b{color:var(--cyan2);font-weight:600;}
+  .live{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--green);border:1px solid rgba(86,227,159,.3);border-radius:5px;padding:3px 8px;display:inline-flex;align-items:center;gap:6px;}
+  .live .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+  .t-body{margin-top:16px;}
+  .t-body p{margin:0 0 12px;font-size:14.5px;color:#cdd8e6;}
+  .t-label{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.14em;color:var(--faint);font-weight:700;display:block;margin-bottom:4px;}
+  .vline{border-left:2px solid rgba(255,90,110,.4);padding-left:14px;margin:0 0 14px;}
+  .vline p{margin:0;font-size:13.5px;color:#e8d6c4;}
+  .vline .t-label{color:var(--amber);}
+  .impact{border-left:2px solid var(--line2);padding-left:14px;margin-top:14px;}
+  .impact p{color:var(--txt);}
+
+  .field{margin-top:16px;}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;}
+  .chip{font-size:11.5px;color:var(--muted);background:var(--surface2);border:1px solid var(--line2);border-radius:6px;padding:4px 10px;}
+  .chip b{color:var(--cyan2);font-weight:600;}
+  .chip.lead{border-color:rgba(94,231,214,.4);background:rgba(94,231,214,.06);}
+
+  .exposed{margin-top:14px;font-size:12px;color:var(--faint);}
+  .exposed .x{color:var(--amber);font-weight:600;}
+  .stat{color:#fff;font-weight:600;border-bottom:1px dotted var(--line2);}
+
+  /* PLAN OF ACTION */
+  .plan{
+    margin-top:18px; border:1px solid rgba(86,227,159,.28);
+    background:rgba(86,227,159,.05); border-radius:12px;
+    padding:15px 18px 16px; border-left:3px solid var(--green);
+  }
+  .plan-label{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.14em;color:var(--green);font-weight:700;display:flex;align-items:center;gap:8px;}
+  .plan-head{font-size:14.5px;font-weight:700;color:#dffaec;margin:8px 0 10px;letter-spacing:-.2px;}
+  ol.moves{margin:0;padding:0;list-style:none;counter-reset:m;}
+  ol.moves li{position:relative;padding:0 0 9px 30px;font-size:13.8px;color:#cdeede;counter-increment:m;}
+  ol.moves li:last-child{padding-bottom:2px;}
+  ol.moves li::before{
+    content:counter(m); position:absolute; left:0; top:1px;
+    width:20px;height:20px;border-radius:50%;
+    background:rgba(86,227,159,.14);border:1px solid rgba(86,227,159,.45);
+    color:var(--green);font-family:ui-monospace,monospace;font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  ol.moves li b{color:#fff;font-weight:600;}
+  .reality{
+    margin-top:12px;padding:10px 12px;border-radius:8px;
+    background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.28);
+    font-size:13px;color:#ffe2b8;
+  }
+  .reality b{color:var(--amber);font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.1em;display:block;margin-bottom:3px;}
+
+  /* CALLOUT */
+  .callout{border:1px dashed var(--line2);border-radius:12px;background:rgba(54,209,220,.04);padding:18px 20px;margin:30px 0;color:var(--muted);font-size:14px;}
+  .callout b{color:var(--cyan2);}
+
+  /* FOOTER */
+  footer{margin-top:42px;border-top:1px solid var(--line);padding-top:22px;}
+  footer h4{font-size:11px;letter-spacing:.18em;color:var(--faint);margin:0 0 12px;}
+  .src{font-size:12px;color:var(--muted);margin:6px 0;word-break:break-word;}
+  .src a{color:var(--cyan);text-decoration:none;}
+  .src a:hover{text-decoration:underline;}
+  .disclaimer{font-size:11.5px;color:var(--faint);margin-top:18px;line-height:1.7;}
+
+  @media (max-width:640px){
+    h1{font-size:23px;}
+    .wrap{padding:24px 15px 60px;}
+    header.hero{padding:22px 18px;}
+    .row{grid-template-columns:28px 1fr;gap:10px;}
+    .rd-right{flex-direction:row;align-items:center;grid-column:1 / -1;margin-top:4px;}
+    .t-head{gap:10px;} .t-num{width:30px;font-size:18px;}
+    .t-title{font-size:17.5px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== HEADER ===== -->
+  <header class="hero">
+    <div class="brandrow">
+      <svg class="radar" viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <radialGradient id="g" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#36d1dc" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#36d1dc" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="sweep" x1="50%" y1="50%" x2="100%" y2="50%">
+            <stop offset="0%" stop-color="#5ee7d6" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#5ee7d6" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="46" fill="url(#g)" stroke="#2c3e54" stroke-width="1"/>
+        <circle cx="50" cy="50" r="31" fill="none" stroke="#223044" stroke-width="1"/>
+        <circle cx="50" cy="50" r="16" fill="none" stroke="#223044" stroke-width="1"/>
+        <line x1="50" y1="4" x2="50" y2="96" stroke="#1c2a3a" stroke-width="1"/>
+        <line x1="4" y1="50" x2="96" y2="50" stroke="#1c2a3a" stroke-width="1"/>
+        <path d="M50 50 L50 4 A46 46 0 0 1 92 38 Z" fill="url(#sweep)">
+          <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="4s" repeatCount="indefinite"/>
+        </path>
+        <circle cx="68" cy="33" r="2.6" fill="#ff5a6e"/>
+        <circle cx="37" cy="62" r="2.4" fill="#ffb347"/>
+        <circle cx="60" cy="68" r="2" fill="#ffb347"/>
+        <circle cx="42" cy="34" r="2" fill="#ff5a6e"/>
+      </svg>
+      <div>
+        <div class="pulse-dot mono"><span class="blip"></span>LIVE · REFRESHES DAILY 6:00 AM</div>
+        <h1>The Live AI <span class="accent">Threat Radar</span></h1>
+      </div>
+    </div>
+    <p class="subtitle">Seven specific, currently-running AIs pulling revenue, pricing power, and pipeline away from agencies, consultants, and coaches. Tracked by name. Ranked by <b style="color:var(--cyan2)">structural severity × live view velocity</b> — highest threat first.</p>
+    <div class="meta-strip mono">
+      <span class="meta-chip">PASS · <b>June 6, 2026 · 06:00</b></span>
+      <span class="meta-chip">RANKING · <b>severity × velocity</b></span>
+      <span class="meta-chip">CRITICAL · <b>2</b></span>
+      <span class="meta-chip">MOVERS · <b>agents ▲ · Perplexity ▼</b></span>
+    </div>
+    <p class="models-line mono">MODELS IN FIELD: <b>GPT-5.5</b> (GPT-5.6 benchmark leaks circulating this week) · <b>Gemini 3.5 Flash</b> + <b>Gemini Omni</b> · <b>Claude Opus 4.8</b> · <b>Perplexity / Comet</b> · <b>Meta Andromeda</b> · NEW agent on board: <b>Gemini Spark</b> — versions current as of pass date. VELOCITY READ from YouTube / X / Reddit / TikTok / Google Trends hourly view-velocity at pass time.</p>
+  </header>
+
+  <!-- ===== INTRO ===== -->
+  <p class="intro">Advice used to be scarce. The thinking, the plan, the first draft, the framework — clients could only get those from someone who'd put in the years. That scarcity is what advisory businesses were really selling. <strong>AI is dissolving the scarcity, not the skill.</strong> Each threat is named, live software clients already have open — ranked by how big it is <em>and</em> how fast it's accelerating in public attention right now. <strong>This pass the agentic wave is the hot story</strong> — Gemini Spark, Meta's leaked "Hatch," and ChatGPT Agent pushed the agents cluster up a place. Every threat carries a <strong>Plan of Action</strong> (the simplest <em>effective</em> moves) and an honest <strong>reality check</strong> wherever the fix is a real repositioning, not a quick tweak.</p>
+
+  <!-- ===== THREAT BOARD / LEADERBOARD ===== -->
+  <div class="board">
+    <div class="board-h">
+      <h3 class="mono">▣ THREAT BOARD — BLENDED RANK</h3>
+      <span class="mono">TAP A ROW TO JUMP TO ITS BRIEFING ↓</span>
+    </div>
+    <div class="vkey mono">
+      <span class="ki"><span class="vmeter v-spike"><span class="vbar r"></span><span class="vbar r"></span><span class="vbar r"></span></span> SPIKING = high hourly view velocity now</span>
+      <span class="ki"><span class="vmeter v-rise"><span class="vbar a"></span><span class="vbar a"></span><span class="vbar"></span></span> RISING</span>
+      <span class="ki"><span class="vmeter v-steady"><span class="vbar g"></span><span class="vbar"></span><span class="vbar"></span></span> STEADY</span>
+    </div>
+
+    <a class="row crit" href="#t1">
+      <div class="rank mono">01</div>
+      <div>
+        <div class="rd-name mono">ChatGPT <span class="vsmall">· GPT-5.5 · OpenAI</span></div>
+        <div class="rd-sub">Clients self-serve the strategy, copy &amp; analysis they used to pay you for. <span class="exp">Hits: everyone.</span></div>
+      </div>
+      <div class="rd-right">
+        <span class="sev-tag sev-crit mono">CRITICAL</span>
+        <span class="vmeter v-spike"><span class="vbar r"></span><span class="vbar r"></span><span class="vbar r"></span><span class="vlabel mono">SPIKING</span></span>
+      </div>
+    </a>
+
+    <a class="row crit" href="#t2">
+      <div class="rank mono">02</div>
+      <div>
+        <div class="rd-name mono">Google AI Mode + AI Overviews <span class="vsmall">· Gemini 3.5 Flash</span></div>
+        <div class="rd-sub">Answers the query on the page — your SEO/content lead funnel dries up. <span class="exp">Hits: content-led firms.</span></div>
+      </div>
+      <div class="rd-right">
+        <span class="sev-tag sev-crit mono">CRITICAL</span>
+        <span class="vmeter v-rise"><span class="vbar a"></span><span class="vbar a"></span><span class="vbar"></span><span class="vlabel mono">RISING</span></span>
+      </div>
+    </a>
+
+    <a class="row" href="#t3">
+      <div class="rank mono">03</div>
+      <div>
+        <div class="rd-name mono">ChatGPT Agent · Gemini Spark · Manus <span class="climb">▲ VELOCITY CLIMB +1</span></div>
+        <div class="rd-sub">Agents that operate your apps start doing multi-step execution end-to-end. <span class="exp">Hits: execution &amp; build work.</span></div>
+      </div>
+      <div class="rd-right">
+        <span class="sev-tag sev-high mono">HIGH</span>
+        <span class="vmeter v-spike"><span class="vbar r"></span><span class="vbar r"></span><span class="vbar r"></span><span class="vlabel mono">SPIKING</span></span>
+      </div>
+    </a>
+
+    <a class="row" href="#t4">
+      <div class="rank mono">04</div>
+      <div>
+        <div class="rd-name mono">Perplexity <span class="vsmall">· + Comet browser</span> <span class="slip">▼ SLIPS 1</span></div>
+        <div class="rd-sub">The answer engine becomes the buyer's gatekeeper — un-named means un-shortlisted. <span class="exp">Hits: inbound-reliant.</span></div>
+      </div>
+      <div class="rd-right">
+        <span class="sev-tag sev-high mono">HIGH</span>
+        <span class="vmeter v-rise"><span class="vbar a"></span><span class="vbar a"></span><span class="vbar"></span><span class="vlabel mono">RISING</span></span>
+      </div>
+    </a>
+
+    <a class="row" href="#t5">
+      <div class="rank mono">05</div>
+      <div>
+        <div class="rd-name mono">Meta Advantage+ / Andromeda <span class="vsmall">· + Google Performance Max</span></div>
+        <div class="rd-sub">Autonomous ad systems run the media buying you charge to manage. <span class="exp">Hits: paid-media agencies.</span></div>
+      </div>
+      <div class="rd-right">
+        <span class="sev-tag sev-high mono">HIGH</span>
+        <span class="vmeter v-rise"><span class="vbar a"></span><span class="vbar a"></span><span class="vbar"></span><span class="vlabel mono">RISING</span></span>
+      </div>
+    </a>
+
+    <a class="row" href="#t6">
+      <div class="rank mono">06</div>
+      <div>
+        <div class="rd-name mono">Ocoya · Jasper · Predis.ai</div>
+        <div class="rd-sub">All-in-one content agents produce &amp; schedule the social/content work you bill for. <span class="exp">Hits: content/social agencies.</span></div>
+      </div>
+      <div class="rd-right">
+        <span class="sev-tag sev-high mono">HIGH</span>
+        <span class="vmeter v-steady"><span class="vbar g"></span><span class="vbar"></span><span class="vbar"></span><span class="vlabel mono">STEADY</span></span>
+      </div>
+    </a>
+
+    <a class="row" href="#t7">
+      <div class="rank mono">07</div>
+      <div>
+        <div class="rd-name mono">Rocky.ai · Wysa <span class="vsmall">· + OpenAI Academy</span></div>
+        <div class="rd-sub">$10–20/mo AI coaches &amp; free curricula commoditize courses and generic coaching. <span class="exp">Hits: coaches/educators.</span></div>
+      </div>
+      <div class="rd-right">
+        <span class="sev-tag sev-high mono">HIGH</span>
+        <span class="vmeter v-steady"><span class="vbar g"></span><span class="vbar"></span><span class="vbar"></span><span class="vlabel mono">STEADY</span></span>
+      </div>
+    </a>
+  </div>
+
+  <div class="seclabel mono">▸ FULL BRIEFING — PRIORITIZED, HIGHEST FIRST</div>
+
+  <!-- ===== THREAT 01 ===== -->
+  <div class="threat crit" id="t1">
+    <div class="t-head">
+      <div class="t-num mono">01</div>
+      <div class="t-titlewrap">
+        <span class="t-kicker mono">CHATGPT · GPT-5.5 · OPENAI</span>
+        <h2 class="t-title">The chatbot on every client's desktop does the advisory work.</h2>
+        <p class="t-shift">THE SHIFT → For ~$20/month, ChatGPT produces the strategy, plans, copy, and analysis clients used to pay an advisor to think through.</p>
+        <div class="t-badges">
+          <span class="sev-tag sev-crit mono">CRITICAL</span>
+          <span class="traj mono">TRAJECTORY · <b>worsening fast</b></span>
+          <span class="velbadge mono">VELOCITY · <span class="vmeter v-spike"><span class="vbar r"></span><span class="vbar r"></span><span class="vbar r"></span><span class="vlabel mono">SPIKING</span></span></span>
+          <span class="live mono"><span class="dot"></span>LIVE</span>
+        </div>
+      </div>
+    </div>
+    <div class="t-body">
+      <div class="vline">
+        <span class="t-label mono">WHY IT'S MOVING (THIS PASS)</span>
+        <p><b>Two fresh velocity drivers this morning.</b> OpenAI's <b>"Dreaming V3"</b> memory upgrade — its biggest memory leap since launch — began reaching ChatGPT Plus &amp; Pro users in the US on <b>June 4</b>, and <b>GPT-5.6 benchmark leaks started circulating this week</b> (prediction markets still price ~80–89% odds of a public release by June 30). A smarter-memory ChatGPT that "remembers your whole business" pulls every "ChatGPT replaced my ___" video back up the charts.</p>
+      </div>
+      <span class="t-label mono">CONTEXT — WHY IT'S #1</span>
+      <p>This isn't a niche tool — it's the assistant clients already have open, running OpenAI's <b>GPT-5.5</b> default model. ChatGPT crossed <span class="stat">1 billion monthly users</span> (~900M weekly) by mid-2026, handling <span class="stat">2 billion+ queries a day</span>. An owner can paste their situation in and get a competent campaign plan, competitor breakdown, coaching reframe, or first-draft strategy in seconds — and with Dreaming V3 it now carries context across sessions. It doesn't have to beat you — it just has to be <em>good enough</em> that the client questions the gap between your invoice and a subscription.</p>
+      <div class="impact">
+        <span class="t-label mono">IMPACT — WHAT IT MEANS FOR THE MONEY</span>
+        <p>Fee compression at the root, hitting all three segments at once. One agency owner described a client demanding an <span class="stat">80% fee cut</span> because "ChatGPT gets better results," then walking when they couldn't match it. Fresh 2026 industry surveys say <span class="stat">27% of agencies</span> have already had clients ask for lower prices because AI makes the work look cheaper, and execution-layer tasks (content, scheduling, email, reporting, keyword research) are the first to get insourced. Money is visibly moving from "pay a human to advise" to "pay for AI."</p>
+      </div>
+      <div class="field">
+        <span class="t-label mono">FIELD — THE COMPETITORS DRIVING THIS</span>
+        <div class="chips">
+          <span class="chip lead"><b>ChatGPT</b> (GPT-5.5 + Dreaming V3)</span>
+          <span class="chip"><b>Claude</b> (Opus 4.8)</span>
+          <span class="chip"><b>Google Gemini</b> (3.5 Flash)</span>
+          <span class="chip"><b>Microsoft Copilot</b></span>
+        </div>
+      </div>
+      <p class="exposed mono"><span class="x">MOST EXPOSED:</span> ALL — agencies · consultants · coaches</p>
+
+      <div class="plan">
+        <div class="plan-label mono">▶ PLAN OF ACTION</div>
+        <div class="plan-head">Sell the outcome, not the answer.</div>
+        <ol class="moves">
+          <li>In every sales conversation, <b>say the line out loud</b>: an AI gives you <em>an answer</em>; I deliver the <em>result, the implementation, and the accountability for it</em>. Make the client describe what happens <em>after</em> the answer — that gap is your offer.</li>
+          <li><b>Stop shipping the strategy doc as the deliverable.</b> Repackage and reprice around done-with-you / done-for-you execution and an outcome a prompt can't produce.</li>
+          <li><b>Use GPT-5.5 / Claude yourself</b> to cut delivery cost and lift margin — but never resell the raw output.</li>
+        </ol>
+        <div class="reality"><b>REALITY CHECK</b>This is a repositioning of <em>what you sell</em>, not a messaging tweak. If your core offer is "I'll tell you what to do," that offer is the thing under threat — plan to rebuild it around implementation, accountability, or a specific result.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== THREAT 02 ===== -->
+  <div class="threat crit" id="t2">
+    <div class="t-head">
+      <div class="t-num mono">02</div>
+      <div class="t-titlewrap">
+        <span class="t-kicker mono">GOOGLE AI MODE + AI OVERVIEWS · GEMINI 3.5 FLASH</span>
+        <h2 class="t-title">Search answers the question — so the click never reaches you.</h2>
+        <p class="t-shift">THE SHIFT → Google now resolves the query on the results page. The blog-and-SEO funnel that quietly fed advisory businesses their leads is collapsing at the top.</p>
+        <div class="t-badges">
+          <span class="sev-tag sev-crit mono">CRITICAL</span>
+          <span class="traj mono">TRAJECTORY · <b>structural, irreversible</b></span>
+          <span class="velbadge mono">VELOCITY · <span class="vmeter v-rise"><span class="vbar a"></span><span class="vbar a"></span><span class="vbar"></span><span class="vlabel mono">RISING</span></span></span>
+          <span class="live mono"><span class="dot"></span>LIVE</span>
+        </div>
+      </div>
+    </div>
+    <div class="t-body">
+      <div class="vline">
+        <span class="t-label mono">WHY IT'S MOVING (THIS PASS)</span>
+        <p>The <b>Google I/O 2026</b> wave is still rolling out: Gemini's new <b>Daily Brief</b> (a personalized morning digest from your inbox + calendar) is reaching AI Plus/Pro/Ultra subscribers right now, and the <b>Gemini Omni</b> video model + app redesign keep Gemini in the feeds. Steady, broad climb — and the same I/O launch seeded Gemini Spark, which is driving Threat 03.</p>
+      </div>
+      <span class="t-label mono">CONTEXT — CURRENT STATE</span>
+      <p>As of I/O 2026, <b>AI Mode</b> (default globally on <b>Gemini 3.5 Flash</b>) passed <span class="stat">1 billion monthly users</span> with queries doubling every quarter, and <b>AI Overviews</b> reached roughly <span class="stat">2.5 billion monthly users</span>. Around <span class="stat">60% of Google searches</span> already end without a click to the open web (SparkToro); inside AI Mode, about <span class="stat">93%</span> produce no click at all (Semrush). "How-to" and informational queries — exactly what advisors publish to get found — are hit hardest.</p>
+      <div class="impact">
+        <span class="t-label mono">IMPACT — WHAT IT MEANS FOR THE MONEY</span>
+        <p>If your pipeline depends on ranking and capturing the click, that pipeline is shrinking fast. <b>HubSpot</b> lost an estimated <span class="stat">70–80%</span> of its organic search traffic amid Google's shifts and AI Overviews; <b>Chegg</b> reported a <span class="stat">49%</span> drop in non-subscriber traffic and sued Google over it. Your content increasingly feeds the AI's answer without ever sending the reader to you.</p>
+      </div>
+      <div class="field">
+        <span class="t-label mono">FIELD — THE COMPETITORS DRIVING THIS</span>
+        <div class="chips">
+          <span class="chip lead"><b>Google AI Mode + AI Overviews</b></span>
+          <span class="chip"><b>Perplexity</b></span>
+          <span class="chip"><b>ChatGPT Search</b></span>
+        </div>
+      </div>
+      <p class="exposed mono"><span class="x">MOST EXPOSED:</span> SEO/content agencies · content-led consultants &amp; coaches · publishers</p>
+
+      <div class="plan">
+        <div class="plan-label mono">▶ PLAN OF ACTION</div>
+        <div class="plan-head">Become the cited source — and stop renting traffic.</div>
+        <ol class="moves">
+          <li><b>Run the visibility audit</b> (10 min): search your category in Google AI Mode, ChatGPT, and Perplexity. Note where you're absent. This is also your fix-list for Threat 04.</li>
+          <li><b>Restructure cornerstone content for AEO/GEO</b>: lead with the direct answer, clear headings, specific numbers, and schema. AI cites concise, authoritative, well-structured sources — not 2,000-word warm-ups.</li>
+          <li><b>Build channels AI can't intercept</b>: an owned email list, referral/partner loops, a community, and presence where humans still go (YouTube, LinkedIn, podcasts).</li>
+        </ol>
+        <div class="reality"><b>REALITY CHECK</b>You cannot out-SEO the zero-click era. The structural move is reducing dependence on organic clicks and rebuilding pipeline across owned + relationship channels. That's real work over months, not a plugin.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== THREAT 03 (CLIMBED ON VELOCITY) ===== -->
+  <div class="threat" id="t3">
+    <div class="t-head">
+      <div class="t-num mono">03</div>
+      <div class="t-titlewrap">
+        <span class="t-kicker mono">CHATGPT AGENT · GEMINI SPARK · MANUS</span>
+        <h2 class="t-title">Agents that operate your apps start doing the whole job.</h2>
+        <p class="t-shift">THE SHIFT → Not just answering — these systems take multi-step actions across apps, files, inboxes, and the web, doing execution work end-to-end with a human only approving.</p>
+        <div class="t-badges">
+          <span class="sev-tag sev-high mono">HIGH</span>
+          <span class="traj mono">TRAJECTORY · <b>emerging — climbing fast</b></span>
+          <span class="velbadge mono">VELOCITY · <span class="vmeter v-spike"><span class="vbar r"></span><span class="vbar r"></span><span class="vbar r"></span><span class="vlabel mono">SPIKING</span></span></span>
+          <span class="live mono"><span class="dot"></span>LIVE</span>
+        </div>
+      </div>
+    </div>
+    <div class="t-body">
+      <div class="vline">
+        <span class="t-label mono">WHY IT CLIMBED THIS PASS (VELOCITY · ▲ +1 → #3)</span>
+        <p>The agentic wave is the loudest story on the board this morning. Google's new <b>Gemini Spark</b> — a 24/7 personal agent wired into Gmail, Docs &amp; Slides that keeps working after you close the laptop — is rolling out to AI Ultra beta this week. On top of it, <b>Meta's leaked "Hatch"</b> consumer agent (reportedly up to $200/mo, living inside Instagram) is all over the feeds. Add ChatGPT Agent and Manus and "the year agents went mainstream" is trending hard — enough to climb past Perplexity to #3. On <em>structural</em> severity alone it still sits lower (agents are emerging); the blend is what lifts it.</p>
+      </div>
+      <span class="t-label mono">CONTEXT — CURRENT STATE</span>
+      <p>OpenAI folded Operator + Deep Research into <b>ChatGPT Agent</b> for web tasks like research, forms, and cross-site workflows (ChatGPT Pro, $200/mo). <b>Gemini Spark</b> (built on Google Antigravity's agent harness) executes Workspace tasks on your behalf in the background. <b>Claude computer use</b> (Opus 4.8) runs in Cowork and Claude Code, strong at local file and document work. <b>Manus</b> Desktop runs long, multi-step autonomous jobs in its own sandbox — and is <em>still independent</em>: China blocked Meta's reported $2B takeover in April 2026. Alongside them, build-it-yourself tools like <b>Lovable</b>, <b>v0</b>, and <b>Bolt</b> let non-developers ship working sites and apps from a prompt.</p>
+      <div class="impact">
+        <span class="t-label mono">IMPACT — WHAT IT MEANS FOR THE MONEY</span>
+        <p>This is the frontier that, as it matures, automates whole processes rather than single tasks — the operational and build work many agencies and consultants resell. The honest reason it isn't ranked higher on severity: today's agents still complete only around <span class="stat">38%</span> of open-ended desktop tasks and mostly run human-in-the-loop. Loud attention, real trajectory — not yet a full replacement.</p>
+      </div>
+      <div class="field">
+        <span class="t-label mono">FIELD — THE COMPETITORS DRIVING THIS</span>
+        <div class="chips">
+          <span class="chip lead"><b>ChatGPT Agent</b> (Operator)</span>
+          <span class="chip"><b>Gemini Spark</b> (new)</span>
+          <span class="chip"><b>Claude Computer Use</b></span>
+          <span class="chip"><b>Manus</b></span>
+          <span class="chip"><b>Meta Hatch</b> (leaked)</span>
+          <span class="chip"><b>Lovable / v0 / Bolt</b> (build)</span>
+        </div>
+      </div>
+      <p class="exposed mono"><span class="x">MOST EXPOSED:</span> ops/automation &amp; web-dev agencies · process-heavy consultants</p>
+
+      <div class="plan">
+        <div class="plan-label mono">▶ PLAN OF ACTION</div>
+        <div class="plan-head">Get in front of the wave — don't wait to be hit by it.</div>
+        <ol class="moves">
+          <li><b>Start using ChatGPT Agent / Gemini Spark / Claude Computer Use / Manus on your own operations now.</b> Build the cost-and-speed advantage before your clients or competitors do.</li>
+          <li><b>Productize agent-run workflows</b> ("we run X end-to-end") so the automation is <em>your</em> leverage and margin, not your replacement.</li>
+          <li><b>Put it on a weekly watch.</b> Its trajectory is the steepest on this board — re-check capability each pass (Gemini Spark went from announce to public beta in under three weeks).</li>
+        </ol>
+        <div class="reality"><b>REALITY CHECK</b>This isn't a fire to put out today — agents still complete only ~38% of open-ended tasks and run human-in-the-loop. The real risk is complacency: early adopters become the low-cost, high-speed option that undercuts everyone who waited.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== THREAT 04 (SLIPPED ONE) ===== -->
+  <div class="threat" id="t4">
+    <div class="t-head">
+      <div class="t-num mono">04</div>
+      <div class="t-titlewrap">
+        <span class="t-kicker mono">PERPLEXITY · + COMET BROWSER</span>
+        <h2 class="t-title">The answer engine is the buyer's new gatekeeper.</h2>
+        <p class="t-shift">THE SHIFT → Prospects research — and shortlist — vendors inside an AI. If it doesn't name you, you're not in the running, however good you are.</p>
+        <div class="t-badges">
+          <span class="sev-tag sev-high mono">HIGH</span>
+          <span class="traj mono">TRAJECTORY · <b>rising — slipped to #4</b></span>
+          <span class="velbadge mono">VELOCITY · <span class="vmeter v-rise"><span class="vbar a"></span><span class="vbar a"></span><span class="vbar"></span><span class="vlabel mono">RISING</span></span></span>
+          <span class="live mono"><span class="dot"></span>LIVE</span>
+        </div>
+      </div>
+    </div>
+    <div class="t-body">
+      <div class="vline">
+        <span class="t-label mono">WHY IT MOVED (THIS PASS · ▼ –1 → #4)</span>
+        <p>Still genuinely rising — <b>Comet</b> is now live on <em>every</em> platform (iOS, Android, Mac, Windows), free worldwide, and just shipped an 8-feature iOS update — but it didn't break out today, so the agentic spike at #3 edged past it. The structural threat is unchanged; this is a velocity reshuffle, not a downgrade.</p>
+      </div>
+      <span class="t-label mono">CONTEXT — CURRENT STATE</span>
+      <p><b>Perplexity</b> (~$18–20B valuation, ~<span class="stat">30M monthly users</span>, used inside <span class="stat">92% of the Fortune 500</span>) is the purest example: its <b>Comet</b> browser — free worldwide since March 2026 — will compare options across retailers and add the pick to your basket. The buying behavior is mainstream: in G2's March 2026 survey of 1,076 buyers, <span class="stat">51%</span> begin research in an AI chatbot (up from 29% a year earlier), <span class="stat">69%</span> chose a different vendor than planned based on what the AI said, and <span class="stat">one in three</span> bought from a company they'd never heard of. 85% think more highly of a vendor the AI names.</p>
+      <div class="impact">
+        <span class="t-label mono">IMPACT — WHAT IT MEANS FOR THE MONEY</span>
+        <p>The moment of competitive selection moves out of your control. A growing share of prospects arrive pre-filtered by a model that already decided who's "worth contacting." Being un-cited by the AI is the new page-10-of-Google — you can be excellent and never get the call.</p>
+      </div>
+      <div class="field">
+        <span class="t-label mono">FIELD — THE COMPETITORS DRIVING THIS</span>
+        <div class="chips">
+          <span class="chip lead"><b>Perplexity</b> + Comet</span>
+          <span class="chip"><b>ChatGPT</b> (B2B research default)</span>
+          <span class="chip"><b>Google Gemini</b></span>
+        </div>
+      </div>
+      <p class="exposed mono"><span class="x">MOST EXPOSED:</span> any advisory firm that wins clients through inbound &amp; discovery</p>
+
+      <div class="plan">
+        <div class="plan-label mono">▶ PLAN OF ACTION</div>
+        <div class="plan-head">Engineer the consensus that makes the AI recommend you.</div>
+        <ol class="moves">
+          <li><b>Manufacture consensus signals.</b> AI recommends what it sees agreed across independent sources. Get listed and reviewed on your niche's directories and review sites (G2-type), earn third-party mentions, and show up genuinely in the Reddit threads, YouTube videos, and forums where your buyers ask questions.</li>
+          <li><b>Publish citable proof</b>: named case studies with real numbers. Vague "we're great" copy is invisible to a model; a specific, verifiable result is quotable.</li>
+          <li><b>Niche down hard.</b> AI surfaces the <em>specialist</em> ("best X for Y"), not the generalist. Tighten positioning to a category you can credibly own.</li>
+        </ol>
+        <div class="reality"><b>REALITY CHECK</b>This compounds slowly — citations build over weeks to months and can't be bought overnight. Start now; once you're the consensus pick, it's a moat competitors can't quickly copy.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== THREAT 05 ===== -->
+  <div class="threat" id="t5">
+    <div class="t-head">
+      <div class="t-num mono">05</div>
+      <div class="t-titlewrap">
+        <span class="t-kicker mono">META ADVANTAGE+ / ANDROMEDA · + GOOGLE PERFORMANCE MAX</span>
+        <h2 class="t-title">Autonomous ad systems run the media buying you bill to manage.</h2>
+        <p class="t-shift">THE SHIFT → The ad platforms now automate audiences, placements, budgets, and creative selection — the work paid-media agencies charge a retainer to do.</p>
+        <div class="t-badges">
+          <span class="sev-tag sev-high mono">HIGH</span>
+          <span class="traj mono">TRAJECTORY · <b>accelerating</b></span>
+          <span class="velbadge mono">VELOCITY · <span class="vmeter v-rise"><span class="vbar a"></span><span class="vbar a"></span><span class="vbar"></span><span class="vlabel mono">RISING</span></span></span>
+          <span class="live mono"><span class="dot"></span>LIVE</span>
+        </div>
+      </div>
+    </div>
+    <div class="t-body">
+      <div class="vline">
+        <span class="t-label mono">WHY IT'S MOVING (THIS PASS)</span>
+        <p>Ad automation stays in heavy rotation: <b>OpenAI's Ads Manager is now fully self-serve</b> — CPC/CPM bidding, no minimum spend — so SMBs and brands can buy ChatGPT ads directly, and the "do we even need an agency to run this?" question is everywhere. Andromeda's rollout keeps the platform-automation story rising, not spiking.</p>
+      </div>
+      <span class="t-label mono">CONTEXT — CURRENT STATE</span>
+      <p><b>Meta Andromeda</b> — a neural retrieval engine on NVIDIA Grace Hopper + Meta's MTIA hardware — scans millions of ads in real time and shortlists the best before the auction even begins; <b>Advantage+</b> hands audiences, placements, and budgets to the algorithm, and has delivered around <span class="stat">22% higher ROAS</span> than manual setups. On the other side, <b>Google Performance Max</b> + AI bidding decide placements, bids, and formats automatically, and <b>OpenAI's new ad platform</b> opens a third self-serve channel. New agentic ad tools now let an assistant draft and launch a campaign from a single prompt, cutting setup from ~45 minutes of clicks to one instruction.</p>
+      <div class="impact">
+        <span class="t-label mono">IMPACT — WHAT IT MEANS FOR THE MONEY</span>
+        <p>When the platform optimizes better than a human dashboard-jockey, "we manage your ads" stops justifying a retainer. The defensible work narrows to creative, offer, measurement, and strategy — a much smaller surface than the full-service media-buying fee most agencies still quote.</p>
+      </div>
+      <div class="field">
+        <span class="t-label mono">FIELD — THE COMPETITORS DRIVING THIS</span>
+        <div class="chips">
+          <span class="chip lead"><b>Meta Advantage+ / Andromeda</b></span>
+          <span class="chip"><b>Google Performance Max</b></span>
+          <span class="chip"><b>OpenAI Ads Manager</b></span>
+        </div>
+      </div>
+      <p class="exposed mono"><span class="x">MOST EXPOSED:</span> paid-media / performance agencies and freelancers</p>
+
+      <div class="plan">
+        <div class="plan-label mono">▶ PLAN OF ACTION</div>
+        <div class="plan-head">Move up the stack the algorithm can't reach.</div>
+        <ol class="moves">
+          <li><b>Stop selling "campaign management" as the core deliverable.</b> Reposition and reprice around the three layers automation can't do: creative volume &amp; testing, offer/funnel strategy, and first-party-data + measurement (connecting CRM/site data is shown to cut CAC meaningfully — and it's provable value).</li>
+          <li><b>Become the creative engine.</b> Advantage+ rewards many creative variants; sell creative testing at scale as your product.</li>
+          <li><b>Tie the fee to growth/outcomes</b>, not hours spent in a dashboard.</li>
+        </ol>
+        <div class="reality"><b>REALITY CHECK</b>The flat "% of ad spend to run the account" model is structurally shrinking as the platforms automate the buying. This needs an offer migration to creative + strategy + data — not a louder pitch for the old service.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== THREAT 06 ===== -->
+  <div class="threat" id="t6">
+    <div class="t-head">
+      <div class="t-num mono">06</div>
+      <div class="t-titlewrap">
+        <span class="t-kicker mono">OCOYA · JASPER · PREDIS.AI</span>
+        <h2 class="t-title">All-in-one content agents produce the work you bill for.</h2>
+        <p class="t-shift">THE SHIFT → Dedicated platforms now generate, design, schedule, and report on content end-to-end — the execution layer that fills agency timesheets.</p>
+        <div class="t-badges">
+          <span class="sev-tag sev-high mono">HIGH</span>
+          <span class="traj mono">TRAJECTORY · <b>steady erosion</b></span>
+          <span class="velbadge mono">VELOCITY · <span class="vmeter v-steady"><span class="vbar g"></span><span class="vbar"></span><span class="vbar"></span><span class="vlabel mono">STEADY</span></span></span>
+          <span class="live mono"><span class="dot"></span>LIVE</span>
+        </div>
+      </div>
+    </div>
+    <div class="t-body">
+      <div class="vline">
+        <span class="t-label mono">WHY IT'S MOVING (THIS PASS)</span>
+        <p>A mature, crowded category — consistent buyer interest but no acute spike in view velocity this pass. Real structural pressure, low headline volatility.</p>
+      </div>
+      <span class="t-label mono">CONTEXT — CURRENT STATE</span>
+      <p>These tools market straight at you: <b>Ocoya</b>'s pitch is literally "<em>Don't hire a social media agency</em>," auto-turning a product listing or price drop into publish-ready posts. <b>Jasper</b> has become a marketing platform whose "Jasper Agents" orchestrate multi-channel campaigns on a trained brand voice. <b>Predis.ai</b> converts a prompt or product catalog into visuals, video ads, and carousels. The cost gap is the whole argument: industry write-ups peg a full-service platform at roughly <span class="stat">$4–6k/year</span> versus <span class="stat">$60–180k/year</span> for an agency, and put execution at <span class="stat">70–80%</span> of what agencies actually bill.</p>
+      <div class="impact">
+        <span class="t-label mono">IMPACT — WHAT IT MEANS FOR THE MONEY</span>
+        <p>When the deliverable is automatable, the markup on it evaporates. Agencies whose pitch is "we make the posts / write the content / build the report" are being repriced against software clients can run themselves. The honest nuance: these tools still need a human for taste, strategy, and brand judgment — but the volume work that padded retainers is going first.</p>
+      </div>
+      <div class="field">
+        <span class="t-label mono">FIELD — THE COMPETITORS DRIVING THIS</span>
+        <div class="chips">
+          <span class="chip lead"><b>Ocoya</b></span>
+          <span class="chip"><b>Jasper</b></span>
+          <span class="chip"><b>Predis.ai</b></span>
+          <span class="chip">+ Canva / Adobe Firefly (creative)</span>
+        </div>
+      </div>
+      <p class="exposed mono"><span class="x">MOST EXPOSED:</span> content, social, and creative-production agencies</p>
+
+      <div class="plan">
+        <div class="plan-label mono">▶ PLAN OF ACTION</div>
+        <div class="plan-head">Run the tools yourself; climb the value ladder.</div>
+        <ol class="moves">
+          <li><b>Adopt these exact platforms internally</b> to multiply output and slash cost — then compete on volume + speed + results at a price clients won't bother to beat, and <em>keep</em> the efficiency gain instead of passing it on.</li>
+          <li><b>Sell what the tool can't</b>: brand voice, taste, strategy, and a specific niche where judgment actually moves results.</li>
+          <li><b>Reprice on outcomes or a productized retainer</b>, never per-asset or per-hour (the per-asset model is exactly what the software undercuts).</li>
+        </ol>
+        <div class="reality"><b>REALITY CHECK</b>Commodity content production as a standalone service is on its way out. The defensible business is "AI-leveraged operator with taste, in a niche" — not "we make the posts."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== THREAT 07 ===== -->
+  <div class="threat" id="t7">
+    <div class="t-head">
+      <div class="t-num mono">07</div>
+      <div class="t-titlewrap">
+        <span class="t-kicker mono">ROCKY.AI · WYSA · + OPENAI ACADEMY</span>
+        <h2 class="t-title">$10–20/month AI coaches commoditize courses and generic coaching.</h2>
+        <p class="t-shift">THE SHIFT → For coaches and course-sellers, the core product is packaged knowledge and "here's what to do" — exactly what these apps deliver 24/7 for the price of a coffee.</p>
+        <div class="t-badges">
+          <span class="sev-tag sev-high mono">HIGH</span>
+          <span class="traj mono">TRAJECTORY · <b>active, category-specific</b></span>
+          <span class="velbadge mono">VELOCITY · <span class="vmeter v-steady"><span class="vbar g"></span><span class="vbar"></span><span class="vbar"></span><span class="vlabel mono">STEADY</span></span></span>
+          <span class="live mono"><span class="dot"></span>LIVE</span>
+        </div>
+      </div>
+    </div>
+    <div class="t-body">
+      <div class="vline">
+        <span class="t-label mono">WHY IT'S MOVING (THIS PASS)</span>
+        <p>Steady consumer interest in AI coaching/companion apps, but no breakout spike this pass. Watch item: Meta's leaked <b>Hatch</b> consumer agent (inside Instagram) could pull AI "personal helper" into the mainstream and accelerate this category — not yet, but soon. The threat is a slow, grinding repricing of "information."</p>
+      </div>
+      <span class="t-label mono">CONTEXT — CURRENT STATE</span>
+      <p>Named, live products undercut the model directly: <b>Rocky.ai</b> runs daily accountability and goal-setting frameworks for <span class="stat">under $15/month</span>; <b>Wysa</b> offers an AI life-coach chat from <span class="stat">$9.99/month</span>; AI fitness coaches like <b>Ray</b> charge <span class="stat">~$20/month</span> for unlimited access against $40–100 <em>per session</em> for a human trainer. Above them sits free knowledge — <b>OpenAI Academy</b> plus a chatbot that builds a personalized plan on request — and viral "ChatGPT runs your content like a $10k/mo agency, free" prompt packs.</p>
+      <div class="impact">
+        <span class="t-label mono">IMPACT — WHAT IT MEANS FOR THE MONEY</span>
+        <p>When the marginal cost of the information you sell drops to zero, you can't price the information. Durable value shifts to what these apps can't replicate — accountability you're held to by a real person, personalized judgment, lived credibility, community, and presence — and away from "I'll teach you the framework." Coaches and educators who sell <em>information</em> rather than <em>transformation</em> are the most exposed of all.</p>
+      </div>
+      <div class="field">
+        <span class="t-label mono">FIELD — THE COMPETITORS DRIVING THIS</span>
+        <div class="chips">
+          <span class="chip lead"><b>Rocky.ai</b></span>
+          <span class="chip"><b>Wysa</b></span>
+          <span class="chip"><b>Ray</b> (fitness)</span>
+          <span class="chip"><b>OpenAI Academy</b> (free)</span>
+          <span class="chip"><b>ChatGPT</b> custom plans</span>
+        </div>
+      </div>
+      <p class="exposed mono"><span class="x">MOST EXPOSED:</span> coaches · course creators · info-product sellers · framework-led consultants</p>
+
+      <div class="plan">
+        <div class="plan-label mono">▶ PLAN OF ACTION</div>
+        <div class="plan-head">Sell transformation and accountability — not information.</div>
+        <ol class="moves">
+          <li><b>Rebuild the offer around what a $15/mo app can't give</b>: real accountability (a person who holds you to it), community and belonging, live access, and personalized judgment. The static course is the part being commoditized — not you.</li>
+          <li><b>Use AI as your <em>between-sessions</em> layer</b> (daily check-ins, prompts) inside your program. Give clients the app experience <em>plus</em> you — don't pretend the app doesn't exist.</li>
+          <li><b>Package a repeatable transformation system with measured outcomes.</b> Build it like a product, deliver it like a high-touch relationship, measure it like a performance program. Short paid challenges (5–21 days) and paid communities convert and retain especially well.</li>
+        </ol>
+        <div class="reality"><b>REALITY CHECK</b>The pure info-product / course model is structurally challenged. If you sell <em>knowledge</em>, you have to move to selling <em>change</em> — a genuine reinvention of the offer, not a price change.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CALLOUT ===== -->
+  <div class="callout">
+    <b>One pattern across all seven — and the thread running through every plan above:</b> these systems aren't replacing the <em>skill</em> of agencies, consultants, and coaches — they're dissolving the <em>scarcity</em> that let them charge for it. What survives is what no named model on this board can commoditize: judgment, accountability, trust, taste, relationships, and outcomes you put your name on. Note the honest split in the reality checks: the smaller threats have clean quick fixes, but the biggest ones (01, 06, 07) demand a genuine repositioning of <em>what you sell</em> — and no amount of easy reading makes that optional. Ranking blends structural severity with live view velocity, so the board reorders as attention shifts (this pass, the agentic cluster — led by the new Gemini Spark — climbed to #3 and Perplexity slipped to #4 on momentum).
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <h4 class="mono">SOURCES &amp; METHODOLOGY</h4>
+    <p class="disclaimer">Compiled June 6, 2026 from live web research, then independently fact-checked, and refreshed automatically each day at 6:00 AM. <b>Ranking = structural severity blended with current hourly view velocity</b> (how fast each named AI is accumulating views/discussion across YouTube, X, Reddit, TikTok, and Google Trends at pass time); spiking threats climb, but a structurally huge threat is never buried by a quiet news day. This pass the agentic wave (Gemini Spark public beta, Meta's leaked "Hatch," ChatGPT Agent) lifted the agents cluster from #4 to #3, edging Perplexity to #4. Model versions and user/valuation figures are current as of the pass date and will move. Some widely cited stats (e.g., HubSpot's traffic loss) are third-party estimates reflecting a mix of AI search and search-algorithm changes. The "80% fee cut" is a single relayed industry anecdote, included as illustration, not data. Note: Manus is <b>independent</b> — China blocked Meta's reported $2B takeover in April 2026.</p>
+    <p class="src">ChatGPT / GPT-5.5 / GPT-5.6 / Dreaming V3 memory: <a href="https://openai.com/index/introducing-gpt-5-5/">openai.com (GPT-5.5)</a> · <a href="https://www.buildfastwithai.com/blogs/ai-news-today-june-6-2026">Dreaming V3 + June 6 digest</a> · <a href="https://www.geeky-gadgets.com/gpt-5-6-june-2026-release/">GPT-5.6 odds/leaks</a></p>
+    <p class="src">Google AI Mode / AI Overviews / Gemini 3.5 / Daily Brief / Omni (I/O 2026): <a href="https://blog.google/innovation-and-ai/products/gemini-app/next-evolution-gemini-app/">blog.google</a> · <a href="https://techcrunch.com/2026/05/19/google-updates-its-gemini-app-to-take-on-chatgpt-and-claude-at-io-2026/">TechCrunch I/O 2026</a> · zero-click: SparkToro · Semrush AI Mode study</p>
+    <p class="src">Agents — ChatGPT Agent / Gemini Spark / Claude Computer Use / Manus / Meta Hatch: <a href="https://techcrunch.com/2026/05/19/google-introduces-gemini-spark-a-24-7-agentic-assistant-with-gmail-integration/">Gemini Spark (TechCrunch)</a> · <a href="https://www.cnbc.com/2026/03/24/anthropic-claude-ai-agent-use-computer-finish-tasks.html">Claude computer use (CNBC)</a> · <a href="https://www.cnbc.com/2026/04/27/meta-manus-china-blocks-acquisition-ai-startup.html">Manus deal blocked (CNBC)</a></p>
+    <p class="src">Perplexity / Comet / G2 buyers: <a href="https://9to5mac.com/2026/05/21/perplexitys-comet-ai-browser-for-ios-upgraded-with-8-major-improvements/">Comet iOS update (9to5Mac)</a> · <a href="https://www.perplexity.ai/hub/blog/comet-is-now-available-to-everyone-worldwide">Comet worldwide (Perplexity)</a> · G2 "Answer Economy" buyer survey</p>
+    <p class="src">Ad automation — Meta Andromeda / Advantage+ / OpenAI Ads: <a href="https://engineering.fb.com/2024/12/02/production-engineering/meta-andromeda-advantage-automation-next-gen-personalized-ads-retrieval-engine/">engineering.fb.com</a> · <a href="https://openai.com/index/new-ways-to-buy-chatgpt-ads/">OpenAI Ads Manager</a> · content agents <a href="https://www.ocoya.com/">ocoya.com</a> · <a href="https://www.jasper.ai/">jasper.ai</a></p>
+    <p class="src">Coaching apps + agency displacement: <a href="https://www.saner.ai/blogs/best-ai-life-coach">Rocky.ai / Wysa review</a> · <a href="https://www.rayfit.com/blog/2026/02/best-ai-personal-trainer-app/">Ray</a> · fee-compression / 27% price-cut data: <a href="https://advertisingweek.com/ai-is-changing-the-way-we-work-agency-pricing-needs-to-change-too/">Advertising Week</a></p>
+    <p class="disclaimer">Live AI Threat Radar · prepared for the Small Business Scaler community · auto-refreshes daily at 6:00 AM · diagnosis + plans of action.</p>
+  </footer>
+
+</div>
+</body>
+</html>
